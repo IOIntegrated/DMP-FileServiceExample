@@ -1,0 +1,74 @@
+{
+    "applicationInsightsConnectionString":  "InstrumentationKey=42227453-923d-4645-a4fe-bbe0c2dd09a2;IngestionEndpoint=https://germanywestcentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://germanywestcentral.livediagnostics.monitor.azure.com/;ApplicationId=9d95132a-6c06-45b7-92da-6534a663bb52",
+    "id":  "87b41ac4-158e-4748-a31f-34d1176a2982",
+    "name":  "DataMigrate Pro",
+    "publisher":  "IO Integrated",
+    "version":  "27.1.175.0",
+    "brief":  "DataMigrate Pro is a highly configurable solution for seamless data transfer between NAV and BC",
+    "description":  "DataMigrate PRO is a solution for structured and secure migration of data from legacy ERP systems to Microsoft Dynamics 365 Business Central. It supports automated import with configurable ETL routes, conversion of complex NAV and BC structures, reusable migration modules, delta handling, and end-to-end validation and logging. The app is designed for partners, consultants, and customers who need traceable and repeatable migration projects with clear reporting and extension support in AL. Supported data sources include ODBC, CSV, REST API, and custom providers. Deployment options include local environments, Azure VM, and Azure Container Apps.",
+    "privacyStatement":  "https://ioi.gmbh/datenschutzerklaerung/",
+    "EULA":  "https://ioi.gmbh/wp-content/uploads/2024/07/agb.pdf",
+    "help":  "https://ioi.gmbh/kontakt",
+    "url":  "https://ioi.gmbh",
+    "logo":  "Logo-01.png",
+    "contextSensitiveHelpUrl":  "https://ioi.gmbh",
+    "dependencies":  [
+
+                     ],
+    "screenshots":  [
+
+                    ],
+    "platform":  "1.0.0.0",
+    "application":  "27.0.0.0",
+    "idRanges":  [
+                     {
+                         "from":  72359575,
+                         "to":  72359624
+                     }
+                 ],
+    "resourceExposurePolicy":  {
+                                   "allowDebugging":  false,
+                                   "allowDownloadingSource":  false,
+                                   "includeSourceInSymbolFile":  false
+                               },
+    "runtime":  "16.0",
+    "features":  [
+                     "NoImplicitWith",
+                     "TranslationFile",
+                     "GenerateCaptions"
+                 ],
+    "supportedLocales":  [
+                             "en-US",
+                             "en-GB",
+                             "en-CA",
+                             "de-DE",
+                             "de-AT",
+                             "de-CH",
+                             "fr-FR",
+                             "fr-CH",
+                             "es-ES",
+                             "es-MX",
+                             "it-IT",
+                             "it-CH",
+                             "pt-BR",
+                             "pt-PT",
+                             "nl-NL",
+                             "nl-BE",
+                             "sv-SE",
+                             "nb-NO",
+                             "da-DK",
+                             "pl-PL"
+                         ],
+    "resourceFolders":  [
+                            "Settings"
+                        ],
+    "suppressWarnings":  [
+                             "AA0005",
+                             "AA0137",
+                             "AA0217",
+                             "AA0228",
+                             "AA0205",
+                             "AA0470",
+                             "AL1025"
+                         ]
+}
