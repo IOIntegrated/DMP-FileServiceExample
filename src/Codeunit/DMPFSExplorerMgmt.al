@@ -22,30 +22,37 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         FileSystemApi: Codeunit "DMP File System API IOI";
         ListDirectoriesTx: Guid;
         ListFilesTx: Guid;
-        ResultJson: Text;
-        ResultStatus: Text[100];
-        ErrorCode: Text[100];
-        ErrorMessage: Text[250];
+        DirsJson: Text;
+        FilesJson: Text;
+        DirsStatus: Text[100];
+        FilesStatus: Text[100];
+        DirsErrorCode: Text[100];
+        DirsErrorMessage: Text[250];
+        FilesErrorCode: Text[100];
+        FilesErrorMessage: Text[250];
+        DirsLoaded: Boolean;
+        FilesLoaded: Boolean;
+        EntryTypeOption: Option Directory,File;
     begin
         ListDirectoriesTx := FileSystemApi.SubmitListDirectories(pAlias, pRelativePath);
         ListFilesTx := FileSystemApi.SubmitListFiles(pAlias, pRelativePath);
         LastTransactionId := ListFilesTx;
-        LastStatusText := StrSubstNo('Refresh started for alias %1 in path %2. Directory transaction: %3 | File transaction: %4', pAlias, pRelativePath, Format(ListDirectoriesTx), Format(ListFilesTx));
 
-        if TryReadResultJsonForTransaction(ListFilesTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
-            LastStatusText := StrSubstNo('Result for %1 loaded: %2', Format(ListFilesTx), ResultStatus);
-            ParseFolderJson(ResultJson, pAlias, pRelativePath, pEntryTable);
-            exit;
-        end;
+        DirsLoaded := WaitForResultJson(ListDirectoriesTx, DirsJson, DirsStatus, DirsErrorCode, DirsErrorMessage);
+        FilesLoaded := WaitForResultJson(ListFilesTx, FilesJson, FilesStatus, FilesErrorCode, FilesErrorMessage);
 
-        if TryReadResultJsonForTransaction(ListDirectoriesTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
-            LastStatusText := StrSubstNo('Result for %1 loaded: %2', Format(ListDirectoriesTx), ResultStatus);
-            ParseFolderJson(ResultJson, pAlias, pRelativePath, pEntryTable);
-            exit;
-        end;
+        pEntryTable.Reset();
+        pEntryTable.DeleteAll();
 
-        ParseFolderJson(BuildSampleFolderJson(pAlias, pRelativePath), pAlias, pRelativePath, pEntryTable);
-        LastStatusText := StrSubstNo('Using fallback sample data for alias %1 in path %2. No async result was available yet.', pAlias, pRelativePath);
+        if DirsLoaded then
+            ParseFolderJson(DirsJson, pAlias, pRelativePath, EntryTypeOption::Directory, pEntryTable);
+        if FilesLoaded then
+            ParseFolderJson(FilesJson, pAlias, pRelativePath, EntryTypeOption::File, pEntryTable);
+
+        if DirsLoaded and FilesLoaded then
+            LastStatusText := CopyStr(StrSubstNo('Loaded %1 entries for alias %2 in path %3.', pEntryTable.Count(), pAlias, pRelativePath), 1, MaxStrLen(LastStatusText))
+        else
+            LastStatusText := CopyStr(StrSubstNo('Refresh incomplete. Loaded: %1. Dirs (%2): %3 %4 %5 | Files (%6): %7 %8 %9', pEntryTable.Count(), Format(ListDirectoriesTx, 0, 4), DirsStatus, DirsErrorCode, DirsErrorMessage, Format(ListFilesTx, 0, 4), FilesStatus, FilesErrorCode, FilesErrorMessage), 1, MaxStrLen(LastStatusText));
     end;
 
     procedure GetLastStatus(): Text[250]
@@ -69,6 +76,28 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
         FileSystemApi.RetryRequest(LastTransactionId);
         LastStatusText := StrSubstNo('Retry submitted for transaction %1.', Format(LastTransactionId));
+    end;
+
+    // Optional wait on top of the fire-and-forget submit procedures.
+    procedure WaitForLastRequest(): Boolean
+    var
+        ResultJson: Text;
+        StatusText: Text[100];
+        ErrorCode: Text[100];
+        ErrorMessage: Text[250];
+    begin
+        if IsNullGuid(LastTransactionId) then begin
+            LastStatusText := 'No last request available to wait for.';
+            exit(false);
+        end;
+
+        if WaitForResultJson(LastTransactionId, ResultJson, StatusText, ErrorCode, ErrorMessage) then begin
+            LastStatusText := CopyStr(StrSubstNo('Request %1 completed. %2', Format(LastTransactionId), CopyStr(ResultJson, 1, 120)), 1, MaxStrLen(LastStatusText));
+            exit(true);
+        end;
+
+        LastStatusText := CopyStr(StrSubstNo('Request %1 failed: %2 %3', Format(LastTransactionId), ErrorCode, ErrorMessage), 1, MaxStrLen(LastStatusText));
+        exit(false);
     end;
 
     procedure CreateDirectory(pAlias: Text[50]; pRelativePath: Text[250]; pDirectoryName: Text[250])
@@ -230,8 +259,11 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
             exit('');
 
         LastSlashPosition := StrLen(NormalizedPath);
-        while (LastSlashPosition > 0) and (CopyStr(NormalizedPath, LastSlashPosition, 1) <> '/') do
+        while LastSlashPosition > 0 do begin
+            if CopyStr(NormalizedPath, LastSlashPosition, 1) = '/' then
+                break;
             LastSlashPosition -= 1;
+        end;
 
         if LastSlashPosition = 0 then
             exit('');
@@ -267,11 +299,18 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         while StrPos(NormalizedPath, '//') > 0 do
             NormalizedPath := DelChr(NormalizedPath, '=', '/');
 
-        while (StrLen(NormalizedPath) > 0) and (CopyStr(NormalizedPath, 1, 1) = '/') do
+        // AL does not short-circuit "and"; guard StrLen separately before indexing with CopyStr.
+        while StrLen(NormalizedPath) > 0 do begin
+            if CopyStr(NormalizedPath, 1, 1) <> '/' then
+                break;
             NormalizedPath := CopyStr(NormalizedPath, 2);
+        end;
 
-        while (StrLen(NormalizedPath) > 0) and (CopyStr(NormalizedPath, StrLen(NormalizedPath), 1) = '/') do
+        while StrLen(NormalizedPath) > 0 do begin
+            if CopyStr(NormalizedPath, StrLen(NormalizedPath), 1) <> '/' then
+                break;
             NormalizedPath := CopyStr(NormalizedPath, 1, StrLen(NormalizedPath) - 1);
+        end;
 
         exit(CopyStr(NormalizedPath, 1, 250));
     end;
@@ -291,7 +330,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         Message(LastStatusText);
     end;
 
-    procedure TryGetFilePreview(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; var pContentText: Text; var pSizeBytes: Integer; var pLastModified: DateTime; var pStatusText: Text[250]): Boolean
+    procedure TryGetFilePreview(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; var pContentText: Text; var pSizeBytes: BigInteger; var pLastModified: DateTime; var pStatusText: Text[250]): Boolean
     var
         FileSystemApi: Codeunit "DMP File System API IOI";
         ReadTx: Guid;
@@ -302,7 +341,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         ErrorCode: Text[100];
         ErrorMessage: Text[250];
         ParsedContentText: Text;
-        ParsedSizeBytes: Integer;
+        ParsedSizeBytes: BigInteger;
         ParsedLastModified: DateTime;
     begin
         pContentText := '';
@@ -316,7 +355,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         LastTransactionId := ReadTx;
         LastStatusText := StrSubstNo('Read request submitted for %1. Read transaction: %2 | Info transaction: %3', FilePath, Format(ReadTx), Format(InfoTx));
 
-        if TryReadResultJsonForTransaction(ReadTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
+        if WaitForResultJson(ReadTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
             if TryParseFileContentJson(ResultJson, ParsedContentText, ParsedSizeBytes, ParsedLastModified) then begin
                 pContentText := ParsedContentText;
                 pSizeBytes := ParsedSizeBytes;
@@ -327,7 +366,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
             end;
         end;
 
-        if TryReadResultJsonForTransaction(InfoTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
+        if WaitForResultJson(InfoTx, ResultJson, ResultStatus, ErrorCode, ErrorMessage) then begin
             if TryParseFileInfoJson(ResultJson, ParsedSizeBytes, ParsedLastModified) then begin
                 pSizeBytes := ParsedSizeBytes;
                 pLastModified := ParsedLastModified;
@@ -340,7 +379,68 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         exit(false);
     end;
 
-    local procedure TryParseFileInfoJson(pJsonText: Text; var pSizeBytes: Integer; var pLastModified: DateTime): Boolean
+    procedure TryGetFilePreviewFromResults(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; var pContentText: Text; var pSizeBytes: BigInteger; var pLastModified: DateTime; var pStatusText: Text[250]): Boolean
+    var
+        FileSystemApi: Codeunit "DMP File System API IOI";
+        FilePath: Text[250];
+        ResultJson: Text;
+        ParsedContentText: Text;
+        ParsedSizeBytes: BigInteger;
+        ParsedLastModified: DateTime;
+        LatestTransactionId: Guid;
+    begin
+        pContentText := '';
+        pSizeBytes := 0;
+        pLastModified := 0DT;
+        pStatusText := '';
+
+        FilePath := BuildRelativePath(pRelativePath, pFileName);
+
+        if not FindLatestCompletedResult(pAlias, FilePath, Enum::"DMP FS Command Type IOI"::ReadFile, LatestTransactionId) then begin
+            pStatusText := CopyStr(StrSubstNo('No completed ReadFile result found for %1.', FilePath), 1, MaxStrLen(pStatusText));
+            LastStatusText := pStatusText;
+            exit(false);
+        end;
+
+        LastTransactionId := LatestTransactionId;
+        ResultJson := FileSystemApi.GetResultPayload(LatestTransactionId);
+        if TryParseFileContentJson(ResultJson, ParsedContentText, ParsedSizeBytes, ParsedLastModified) then begin
+            pContentText := ParsedContentText;
+            pSizeBytes := ParsedSizeBytes;
+            pLastModified := ParsedLastModified;
+            pStatusText := CopyStr(StrSubstNo('Loaded from result %1.', Format(LatestTransactionId, 0, 4)), 1, MaxStrLen(pStatusText));
+            LastStatusText := pStatusText;
+            exit(true);
+        end;
+
+        pStatusText := CopyStr(StrSubstNo('Result payload for %1 could not be parsed.', FilePath), 1, MaxStrLen(pStatusText));
+        LastStatusText := pStatusText;
+        exit(false);
+    end;
+
+    local procedure FindLatestCompletedResult(pAlias: Text[50]; pRelativePath: Text[250]; pCommand: Enum "DMP FS Command Type IOI"; var pTransactionId: Guid): Boolean
+    var
+        ResultRec: Record "DMP FS Result IOI";
+        LatestCompletedAt: DateTime;
+        HasResult: Boolean;
+    begin
+        Clear(pTransactionId);
+        ResultRec.SetRange("Path Alias", CopyStr(pAlias, 1, MaxStrLen(ResultRec."Path Alias")));
+        ResultRec.SetRange("Relative Path", pRelativePath);
+        ResultRec.SetRange(Command, pCommand);
+        ResultRec.SetRange(Status, ResultRec.Status::Completed);
+        if ResultRec.FindSet() then
+            repeat
+                if (not HasResult) or (ResultRec."Completed At" >= LatestCompletedAt) then begin
+                    LatestCompletedAt := ResultRec."Completed At";
+                    pTransactionId := ResultRec."Transaction Id";
+                    HasResult := true;
+                end;
+            until ResultRec.Next() = 0;
+        exit(HasResult);
+    end;
+
+    local procedure TryParseFileInfoJson(pJsonText: Text; var pSizeBytes: BigInteger; var pLastModified: DateTime): Boolean
     var
         JsonObject: JsonObject;
         JsonToken: JsonToken;
@@ -363,7 +463,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
                 DataObject := JsonToken.AsObject();
 
         if DataObject.Get('sizeBytes', SizeToken) then
-            pSizeBytes := SizeToken.AsValue().AsInteger();
+            Evaluate(pSizeBytes, SizeToken.AsValue().AsText());
 
         if DataObject.Get('lastModified', LastModifiedToken) then
             Evaluate(pLastModified, LastModifiedToken.AsValue().AsText());
@@ -374,7 +474,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         exit((pSizeBytes <> 0) or (pLastModified <> 0DT));
     end;
 
-    local procedure TryParseFileContentJson(pJsonText: Text; var pContentText: Text; var pSizeBytes: Integer; var pLastModified: DateTime): Boolean
+    local procedure TryParseFileContentJson(pJsonText: Text; var pContentText: Text; var pSizeBytes: BigInteger; var pLastModified: DateTime): Boolean
     var
         JsonObject: JsonObject;
         JsonToken: JsonToken;
@@ -413,7 +513,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
             end;
 
         if DataObject.Get('sizeBytes', JsonToken) then
-            pSizeBytes := JsonToken.AsValue().AsInteger();
+            Evaluate(pSizeBytes, JsonToken.AsValue().AsText());
 
         if DataObject.Get('lastModified', JsonToken) then
             Evaluate(pLastModified, JsonToken.AsValue().AsText());
@@ -424,8 +524,9 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         exit((pContentText <> '') or (pSizeBytes <> 0) or (pLastModified <> 0DT));
     end;
 
-    local procedure TryReadResultJsonForTransaction(pTransactionId: Guid; var pResultJson: Text; var pStatusText: Text[100]; var pErrorCode: Text[100]; var pErrorMessage: Text[250]): Boolean
+    local procedure WaitForResultJson(pTransactionId: Guid; var pResultJson: Text; var pStatusText: Text[100]; var pErrorCode: Text[100]; var pErrorMessage: Text[250]): Boolean
     var
+        FileSystemApi: Codeunit "DMP File System API IOI";
         ResultRec: Record "DMP FS Result IOI";
     begin
         pResultJson := '';
@@ -433,28 +534,35 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         pErrorCode := '';
         pErrorMessage := '';
 
-        if not ResultRec.Get(pTransactionId) then
+        SelectLatestVersion();
+        if not ResultRec.Get(pTransactionId) then begin
+            pStatusText := 'Failed';
+            pErrorCode := 'NO_RESULT';
+            pErrorMessage := CopyStr(StrSubstNo('No result found for transaction %1.', pTransactionId), 1, MaxStrLen(pErrorMessage));
             exit(false);
+        end;
 
-        pResultJson := ResultRec."Result Json";
-        pStatusText := Format(ResultRec.Status);
-        pErrorCode := ResultRec."Error Code";
-        pErrorMessage := ResultRec.Message;
+        if not (ResultRec.Status in [ResultRec.Status::Completed, ResultRec.Status::Failed]) then begin
+            pStatusText := 'Pending';
+            pErrorCode := 'PENDING';
+            pErrorMessage := CopyStr(StrSubstNo('Result for transaction %1 not finalized (status %2).', pTransactionId, Format(ResultRec.Status)), 1, MaxStrLen(pErrorMessage));
+            exit(false);
+        end;
 
-        exit(pResultJson <> '');
+        pResultJson := FileSystemApi.GetResultPayload(pTransactionId);
+        pErrorCode := CopyStr(ResultRec."Error Code", 1, MaxStrLen(pErrorCode));
+        pErrorMessage := CopyStr(ResultRec.Message, 1, MaxStrLen(pErrorMessage));
+
+        if ResultRec.Status = ResultRec.Status::Completed then begin
+            pStatusText := 'Completed';
+            exit(true);
+        end;
+
+        pStatusText := 'Failed';
+        exit(false);
     end;
 
-    local procedure BuildSampleFolderJson(pAlias: Text[50]; pRelativePath: Text[250]): Text
-    var
-        JsonText: Text;
-    begin
-        JsonText := '{"items":[{"entryType":"directory","name":"archive","fullPath":"' + pRelativePath + '/archive","sizeBytes":0,"lastModified":"2026-08-21T12:00:00Z"},{"entryType":"file","name":"sample.txt","fullPath":"' + pRelativePath + '/sample.txt","sizeBytes":128,"lastModified":"2026-08-21T12:00:00Z"}]}';
-        if pAlias = '' then
-            JsonText := '{"items":[{"entryType":"directory","name":"root","fullPath":"/","sizeBytes":0,"lastModified":"2026-08-21T12:00:00Z"}]}';
-        exit(JsonText);
-    end;
-
-    local procedure ParseFolderJson(pJsonText: Text; pAlias: Text[50]; pRelativePath: Text[250]; var pEntryTable: Record "DMP FS Explorer Entry IOI")
+    procedure ParseFolderJson(pJsonText: Text; pAlias: Text[50]; pRelativePath: Text[250]; pDefaultEntryType: Option Directory,File; var pEntryTable: Record "DMP FS Explorer Entry IOI")
     var
         JsonObject: JsonObject;
         JsonToken: JsonToken;
@@ -466,14 +574,11 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         EntryTypeText: Text;
         NameText: Text;
         FullPathText: Text;
-        SizeBytes: Integer;
+        SizeBytes: BigInteger;
         LastModifiedText: Text;
         LastModifiedValue: DateTime;
         EntryTypeOption: Option Directory,File;
     begin
-        pEntryTable.Reset();
-        pEntryTable.DeleteAll();
-
         if pJsonText = '' then
             exit;
 
@@ -506,6 +611,12 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
             JsonArray.Get(i, ItemToken);
             ItemObject := ItemToken.AsObject();
 
+            EntryTypeText := '';
+            NameText := '';
+            FullPathText := '';
+            SizeBytes := 0;
+            LastModifiedText := '';
+
             if ItemObject.Get('entryType', JsonToken) then
                 EntryTypeText := JsonToken.AsValue().AsText();
             if ItemObject.Get('type', JsonToken) then
@@ -519,30 +630,43 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
                 if FullPathText = '' then
                     FullPathText := JsonToken.AsValue().AsText();
             if ItemObject.Get('sizeBytes', JsonToken) then
-                SizeBytes := JsonToken.AsValue().AsInteger();
+                Evaluate(SizeBytes, JsonToken.AsValue().AsText());
             if ItemObject.Get('size', JsonToken) then
                 if SizeBytes = 0 then
-                    SizeBytes := JsonToken.AsValue().AsInteger();
+                    Evaluate(SizeBytes, JsonToken.AsValue().AsText());
             if ItemObject.Get('lastModified', JsonToken) then
                 LastModifiedText := JsonToken.AsValue().AsText();
             if ItemObject.Get('modifiedAt', JsonToken) then
                 if LastModifiedText = '' then
                     LastModifiedText := JsonToken.AsValue().AsText();
+            if ItemObject.Get('lastWriteAtUtc', JsonToken) then
+                if LastModifiedText = '' then
+                    LastModifiedText := JsonToken.AsValue().AsText();
+            if ItemObject.Get('createdAtUtc', JsonToken) then
+                if LastModifiedText = '' then
+                    LastModifiedText := JsonToken.AsValue().AsText();
 
-            if UpperCase(EntryTypeText) = 'DIRECTORY' then
-                EntryTypeOption := EntryTypeOption::Directory
-            else
-                EntryTypeOption := EntryTypeOption::File;
+            case UpperCase(EntryTypeText) of
+                'DIRECTORY':
+                    EntryTypeOption := EntryTypeOption::Directory;
+                'FILE':
+                    EntryTypeOption := EntryTypeOption::File;
+                else
+                    EntryTypeOption := pDefaultEntryType;
+            end;
 
+            LastModifiedValue := 0DT;
             if LastModifiedText <> '' then
-                Evaluate(LastModifiedValue, LastModifiedText)
-            else
-                LastModifiedValue := CurrentDateTime();
+                if not Evaluate(LastModifiedValue, LastModifiedText, 9) then
+                    if not Evaluate(LastModifiedValue, LastModifiedText) then
+                        LastModifiedValue := 0DT;
 
             if NameText = '' then
                 NameText := CopyStr(FullPathText, StrLen(FullPathText) - StrPos(FullPathText, '/') + 2, 250);
 
-            pEntryTable.SetEntry(pAlias, FullPathText, EntryTypeOption, NameText, SizeBytes, LastModifiedValue);
+            // PK is Name; skip duplicates when merging directory and file listings
+            if not pEntryTable.Get(CopyStr(NameText, 1, MaxStrLen(pEntryTable.Name))) then
+                pEntryTable.SetEntry(pAlias, CopyStr(FullPathText, 1, 250), EntryTypeOption, CopyStr(NameText, 1, 250), SizeBytes, LastModifiedValue);
         end;
     end;
 
@@ -552,7 +676,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         DeleteTx: Guid;
         FilePath: Text[250];
     begin
-        FilePath := StrSubstNo('%1/%2', pRelativePath, pFileName);
+        FilePath := BuildRelativePath(pRelativePath, pFileName);
         DeleteTx := FileSystemApi.SubmitDeleteFile(pAlias, FilePath);
         LastTransactionId := DeleteTx;
         LastStatusText := StrSubstNo('Delete request submitted for %1. Transaction: %2', FilePath, Format(DeleteTx));

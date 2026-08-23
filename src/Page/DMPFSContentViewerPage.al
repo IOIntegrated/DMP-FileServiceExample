@@ -70,6 +70,26 @@ page 92001 "DMP FS Content Viewer IOI"
                     ExplorerMgmt.ReadCurrentFile(AliasValue, PathValue, FileNameValue);
                 end;
             }
+            action(LoadFromResults)
+            {
+                ApplicationArea = All;
+                Caption = 'Load From Results';
+                Image = View;
+
+                trigger OnAction()
+                var
+                    ExplorerMgmt: Codeunit "DMP FS Explorer Mgmt. IOI";
+                    ContentText: Text;
+                    SizeBytes: BigInteger;
+                    LastModified: DateTime;
+                    StatusText: Text[250];
+                begin
+                    if ExplorerMgmt.TryGetFilePreviewFromResults(AliasValue, PathValue, FileNameValue, ContentText, SizeBytes, LastModified, StatusText) then
+                        SetMetadata(AliasValue, PathValue, FileNameValue, SizeBytes, LastModified, ContentText)
+                    else
+                        Message(StatusText);
+                end;
+            }
         }
     }
 
@@ -91,7 +111,7 @@ page 92001 "DMP FS Content Viewer IOI"
         FileContent := pContent;
     end;
 
-    procedure SetMetadata(pAlias: Text[50]; pPath: Text[250]; pFileName: Text[250]; pSizeBytes: Integer; pLastModified: DateTime; pContent: Text)
+    procedure SetMetadata(pAlias: Text[50]; pPath: Text[250]; pFileName: Text[250]; pSizeBytes: BigInteger; pLastModified: DateTime; pContent: Text)
     begin
         AliasValue := pAlias;
         PathValue := pPath;

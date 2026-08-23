@@ -43,9 +43,6 @@
     "en-US",
     "de-DE"
   ],
-  "resourceFolders": [
-    "Resources"
-  ],
   "suppressWarnings": [
     "AL1025"
   ]

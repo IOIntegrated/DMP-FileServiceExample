@@ -18,7 +18,7 @@ table 92000 "DMP FS Explorer Entry IOI"
         {
             Caption = 'Full Path';
         }
-        field(4; "Size Bytes"; Integer)
+        field(4; "Size Bytes"; BigInteger)
         {
             Caption = 'Size Bytes';
         }
@@ -40,7 +40,7 @@ table 92000 "DMP FS Explorer Entry IOI"
         }
     }
 
-    procedure SetEntry(pAlias: Text[50]; pPath: Text[250]; pEntryType: Option Directory,File; pName: Text[250]; pSizeBytes: Integer; pLastModified: DateTime)
+    procedure SetEntry(pAlias: Text[50]; pPath: Text[250]; pEntryType: Option Directory,File; pName: Text[250]; pSizeBytes: BigInteger; pLastModified: DateTime)
     begin
         Init();
         Alias := pAlias;
