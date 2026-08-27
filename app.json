@@ -1,0 +1,49 @@
+{
+  "id": "c7f72d8d-3ba9-4d4e-b9ad-34d51f5f1d66",
+  "name": "DMP File System Explorer",
+  "publisher": "IO Integrated",
+  "version": "1.0.0.0",
+  "brief": "Demo file system explorer using DataMigrate Pro File Services",
+  "description": "Demo extension that provides a Business Central file explorer for DataMigrate Pro file service aliases and file operations.",
+  "privacyStatement": "https://ioi.gmbh/datenschutzerklaerung/",
+  "EULA": "https://ioi.gmbh/wp-content/uploads/2024/07/agb.pdf",
+  "help": "https://ioi.gmbh/kontakt",
+  "url": "https://ioi.gmbh",
+  "logo": "Logo-01.png",
+  "contextSensitiveHelpUrl": "https://ioi.gmbh",
+  "dependencies": [
+    {
+      "id": "87b41ac4-158e-4748-a31f-34d1176a2982",
+      "name": "DataMigrate Pro",
+      "publisher": "IO Integrated",
+      "version": "27.1.228.0"
+    }
+  ],
+  "screenshots": [],
+  "platform": "1.0.0.0",
+  "application": "27.0.0.0",
+  "idRanges": [
+    {
+      "from": 92000,
+      "to": 92049
+    }
+  ],
+  "resourceExposurePolicy": {
+    "allowDebugging": false,
+    "allowDownloadingSource": false,
+    "includeSourceInSymbolFile": false
+  },
+  "runtime": "16.0",
+  "features": [
+    "NoImplicitWith",
+    "TranslationFile",
+    "GenerateCaptions"
+  ],
+  "supportedLocales": [
+    "en-US",
+    "de-DE"
+  ],
+  "suppressWarnings": [
+    "AL1025"
+  ]
+}

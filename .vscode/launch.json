@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "name": "Sandbo DataMigratePro",
+        "type": "al",
+        "request": "launch",
+        "environmentType": "Sandbox",
+        "environmentName": "DataMigratePro",
+        "startupObjectId": 92006,
+        "breakOnError": "All",
+        "tenant": "c4d0f475-9a8a-4dfb-9919-c1475a4e8015",
+        "breakOnRecordWrite": "None",
+        "launchBrowser": true,
+        "enableSqlInformationDebugger": true,
+        "enableLongRunningSqlStatements": true,
+        "longRunningSqlStatementsThreshold": 500,
+        "numberOfSqlStatements": 10,
+        "useMcpServerForDebugging": true
+    }
+  ]
+}
