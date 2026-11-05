@@ -1,20 +1,15 @@
 {
-  "folders": [
-    {
-      "name": "DMPFileSystemExplorer",
-      "path": "DMPFileSystemExplorer"
-    },
-    {
-      "name": "docs",
-      "path": "docs"
-    }
-  ],
-  "settings": {
-    "al.enableCodeAnalysis": true,
-    "al.codeAnalyzers": [
-      "${CodeCop}",
-      "${UICop}",
-      "${PerTenantExtensionCop}"
-    ]
-  }
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"al.enableCodeAnalysis": true,
+		"al.codeAnalyzers": [
+			"${CodeCop}",
+			"${UICop}",
+			"${PerTenantExtensionCop}"
+		]
+	}
 }
