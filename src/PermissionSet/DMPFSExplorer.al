@@ -11,5 +11,6 @@ permissionset 92000 "DMP FS EXPLORER IOI"
         page "DMP FS Content Viewer IOI" = X,
         page "DMP FS Explorer IOI" = X,
         codeunit "DMP FS Explorer Actions IOI" = X,
-        codeunit "DMP FS Explorer Mgmt. IOI" = X;
+        codeunit "DMP FS Explorer Mgmt. IOI" = X,
+        codeunit "DMP FS Explorer Transport IOI" = X;
 }

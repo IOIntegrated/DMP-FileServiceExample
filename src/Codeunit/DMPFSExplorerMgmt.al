@@ -6,10 +6,12 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure RefreshCurrentFolder(pAlias: Text[50]; pRelativePath: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         ListDirectoriesTx: Guid;
         ListFilesTx: Guid;
     begin
+        BindSubscription(Transport);
         ListDirectoriesTx := FileSystemApi.SubmitListDirectories(pAlias, pRelativePath);
         ListFilesTx := FileSystemApi.SubmitListFiles(pAlias, pRelativePath);
         LastTransactionId := ListFilesTx;
@@ -19,6 +21,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure RefreshCurrentFolder(pAlias: Text[50]; pRelativePath: Text[250]; var pEntryTable: Record "DMP FS Explorer Entry IOI")
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         ListDirectoriesTx: Guid;
         ListFilesTx: Guid;
@@ -34,6 +37,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         FilesLoaded: Boolean;
         EntryTypeOption: Option Directory,File;
     begin
+        BindSubscription(Transport);
         ListDirectoriesTx := FileSystemApi.SubmitListDirectories(pAlias, pRelativePath);
         ListFilesTx := FileSystemApi.SubmitListFiles(pAlias, pRelativePath);
         LastTransactionId := ListFilesTx;
@@ -67,6 +71,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure RetryLastRequest()
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
     begin
         if IsNullGuid(LastTransactionId) then begin
@@ -74,6 +79,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
             exit;
         end;
 
+        BindSubscription(Transport);
         FileSystemApi.RetryRequest(LastTransactionId);
         LastStatusText := StrSubstNo('Retry submitted for transaction %1.', Format(LastTransactionId));
     end;
@@ -102,11 +108,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure CreateDirectory(pAlias: Text[50]; pRelativePath: Text[250]; pDirectoryName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         TargetPath: Text[250];
         Tx: Guid;
     begin
         TargetPath := BuildRelativePath(pRelativePath, pDirectoryName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitCreateDirectory(pAlias, TargetPath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Create directory request submitted for %1. Transaction: %2', TargetPath, Format(Tx));
@@ -115,11 +123,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure AppendCurrentFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; pContent: Text)
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         FilePath: Text[250];
         Tx: Guid;
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitAppendFile(pAlias, FilePath, pContent);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Append request submitted for %1. Transaction: %2', FilePath, Format(Tx));
@@ -128,11 +138,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure DeleteDirectory(pAlias: Text[50]; pRelativePath: Text[250]; pRecursive: Boolean)
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         NormalizedPath: Text[250];
         Tx: Guid;
     begin
         NormalizedPath := NormalizeRelativePath(pRelativePath);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitDeleteDirectory(pAlias, NormalizedPath, pRecursive);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Delete directory request submitted for %1. Transaction: %2', NormalizedPath, Format(Tx));
@@ -141,11 +153,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure CheckFileExists(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         FilePath: Text[250];
         Tx: Guid;
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitFileExists(pAlias, FilePath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('File existence request submitted for %1. Transaction: %2', FilePath, Format(Tx));
@@ -154,11 +168,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure CheckDirectoryExists(pAlias: Text[50]; pRelativePath: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         NormalizedPath: Text[250];
         Tx: Guid;
     begin
         NormalizedPath := NormalizeRelativePath(pRelativePath);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitDirectoryExists(pAlias, NormalizedPath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Directory existence request submitted for %1. Transaction: %2', NormalizedPath, Format(Tx));
@@ -167,11 +183,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure ImportXmlFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         FilePath: Text[250];
         Tx: Guid;
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitImportXmlPortSource(pAlias, FilePath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('XML import request submitted for %1. Transaction: %2', FilePath, Format(Tx));
@@ -180,11 +198,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure ExportXmlFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; pXmlContent: Text)
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         FilePath: Text[250];
         Tx: Guid;
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitExportXmlPortTarget(pAlias, FilePath, pXmlContent);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('XML export request submitted for %1. Transaction: %2', FilePath, Format(Tx));
@@ -193,11 +213,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure WriteCurrentFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; pContent: Text)
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         FilePath: Text[250];
         Tx: Guid;
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitWriteFile(pAlias, FilePath, pContent);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Write request submitted for %1. Transaction: %2', FilePath, Format(Tx));
@@ -206,6 +228,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure CopyCurrentFile(pSourceAlias: Text[50]; pSourceRelativePath: Text[250]; pSourceFileName: Text[250]; pTargetAlias: Text[50]; pTargetRelativePath: Text[250]; pTargetFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         SourcePath: Text[250];
         TargetPath: Text[250];
@@ -213,6 +236,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
     begin
         SourcePath := BuildRelativePath(pSourceRelativePath, pSourceFileName);
         TargetPath := BuildRelativePath(pTargetRelativePath, pTargetFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitCopyFile(pSourceAlias, SourcePath, pTargetAlias, TargetPath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Copy request submitted: %1 -> %2. Transaction: %3', SourcePath, TargetPath, Format(Tx));
@@ -221,6 +245,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure MoveCurrentFile(pSourceAlias: Text[50]; pSourceRelativePath: Text[250]; pSourceFileName: Text[250]; pTargetAlias: Text[50]; pTargetRelativePath: Text[250]; pTargetFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         SourcePath: Text[250];
         TargetPath: Text[250];
@@ -228,6 +253,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
     begin
         SourcePath := BuildRelativePath(pSourceRelativePath, pSourceFileName);
         TargetPath := BuildRelativePath(pTargetRelativePath, pTargetFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitMoveFile(pSourceAlias, SourcePath, pTargetAlias, TargetPath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Move request submitted: %1 -> %2. Transaction: %3', SourcePath, TargetPath, Format(Tx));
@@ -236,6 +262,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure ArchiveCurrentFile(pSourceAlias: Text[50]; pSourceRelativePath: Text[250]; pSourceFileName: Text[250]; pArchiveAlias: Text[50]; pArchiveRelativePath: Text[250]; pArchiveFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         SourcePath: Text[250];
         TargetPath: Text[250];
@@ -243,6 +270,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
     begin
         SourcePath := BuildRelativePath(pSourceRelativePath, pSourceFileName);
         TargetPath := BuildRelativePath(pArchiveRelativePath, pArchiveFileName);
+        BindSubscription(Transport);
         Tx := FileSystemApi.SubmitArchiveFile(pSourceAlias, SourcePath, pArchiveAlias, TargetPath);
         LastTransactionId := Tx;
         LastStatusText := StrSubstNo('Archive request submitted: %1 -> %2. Transaction: %3', SourcePath, TargetPath, Format(Tx));
@@ -317,12 +345,14 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure ReadCurrentFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         ReadTx: Guid;
         InfoTx: Guid;
         FilePath: Text[250];
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         ReadTx := FileSystemApi.SubmitReadFile(pAlias, FilePath);
         InfoTx := FileSystemApi.SubmitGetFileInfo(pAlias, FilePath);
         LastTransactionId := ReadTx;
@@ -332,6 +362,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure TryGetFilePreview(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250]; var pContentText: Text; var pSizeBytes: BigInteger; var pLastModified: DateTime; var pStatusText: Text[250]): Boolean
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         ReadTx: Guid;
         InfoTx: Guid;
@@ -350,6 +381,7 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
         pStatusText := '';
 
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         ReadTx := FileSystemApi.SubmitReadFile(pAlias, FilePath);
         InfoTx := FileSystemApi.SubmitGetFileInfo(pAlias, FilePath);
         LastTransactionId := ReadTx;
@@ -672,11 +704,13 @@ codeunit 92005 "DMP FS Explorer Mgmt. IOI"
 
     procedure DeleteCurrentFile(pAlias: Text[50]; pRelativePath: Text[250]; pFileName: Text[250])
     var
+        Transport: Codeunit "DMP FS Explorer Transport IOI";
         FileSystemApi: Codeunit "DMP File System API IOI";
         DeleteTx: Guid;
         FilePath: Text[250];
     begin
         FilePath := BuildRelativePath(pRelativePath, pFileName);
+        BindSubscription(Transport);
         DeleteTx := FileSystemApi.SubmitDeleteFile(pAlias, FilePath);
         LastTransactionId := DeleteTx;
         LastStatusText := StrSubstNo('Delete request submitted for %1. Transaction: %2', FilePath, Format(DeleteTx));
