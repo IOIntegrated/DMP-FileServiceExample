@@ -2,7 +2,7 @@
   "id": "c7f72d8d-3ba9-4d4e-b9ad-34d51f5f1d66",
   "name": "DMP File System Explorer",
   "publisher": "IO Integrated",
-  "version": "1.0.0.1",
+  "version": "1.0.0.2",
   "brief": "Demo file system explorer using DataMigrate Pro File Services",
   "description": "Demo extension that provides a Business Central file explorer for DataMigrate Pro file service aliases and file operations.",
   "privacyStatement": "https://ioi.gmbh/datenschutzerklaerung/",
